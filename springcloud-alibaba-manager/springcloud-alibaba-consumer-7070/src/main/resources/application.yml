@@ -1,0 +1,21 @@
+server:
+  port: 7070
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        #nacos的注册地址
+#        server-addr: 172.18.96.177:8848, 172.18.96.177:8849
+
+        # 是否将该服务注册到nacos
+        register-enabled: true
+        server-addr: nacos1:8848
+
+    sentinel:
+      eager: true
+
+      transport:
+        dashboard: localhost:8080
+  application:
+    name: alibaba-consumer

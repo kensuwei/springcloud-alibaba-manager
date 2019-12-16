@@ -1,0 +1,65 @@
+server:
+  port: 9091
+
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        #nacos的注册地址
+#        server-addr: 172.18.96.177:8848, 172.18.96.177:8849
+
+        # 是否将该服务注册到nacos
+        register-enabled: true
+        server-addr: nacos1:8848
+
+    gateway:
+      discovery:
+        locator:
+          # http://localhost:9091/alibaba-consumer/users
+          # http://locahost:8080/userServet/getUserByName?name=zhangsan  上下两种方式将服务内部的信息暴露出来了，不安全
+          # enabled为true，表示的意思是可以通过服务名的方式来访问服务, 通常在实际工作改为false
+          enabled: false
+      # 网关的核心配置主要是route(路由)
+      routes:
+        # id是标识当前服务的唯一标识，通常和服务名保持一致
+        - id: alibaba-consumer
+          # lb(load balance)
+          uri: lb://alibaba-consumer
+          # 谓词
+          predicates:
+            # 通过访问http://localhost:9091/users 会定位到 alibaba-consumer这个服务中 /users
+            - Path=/ac/users
+            # 值请求中必须携带 orgin=xx 这样的参数, \w+表示的 a-zA-Z0-9_
+            # \w: a-zA-Z0-9_
+            # \d: 0-9
+            # \s: 空格 \t \r\n
+            # +: 一到多次
+            # *: 0到多次
+            # ?: 一次或者0次
+            # .: 表示任何字符
+            - Query=origin,[a-zA-z]+
+            - Method=get
+            # 表示请求头中必须携带token变量，参数值必须是 a-zA-Z0-9_ 出现一到多次
+            - Header=token,\w+
+            - After=2019-12-16T00:00:00+15:38[Asia/Shanghai]
+            - Before=2019-12-31T00:00:00+08:00[Asia/Shanghai]
+            # 172.18.96.0/28  172.18.96.0-172.18.96.15
+            - RemoteAddr=172.18.96.128/26
+          filters:
+            # (?) 表示将这一组数据抽取出来，<abc>将抽取的数据赋值给abc
+            # /ac/users/23   abc=/users/23 ${abc}
+            # http://localhost:9091/ac/users
+            - RewritePath=/ac(?<abc>/?.*),$\{abc}
+            - Customize=abc,XYZ
+
+        - id: alibaba-provider
+          uri: lb://alibaba-provider
+          predicates:
+            - Path=/ap/users
+            - Method=post
+          filters:
+            - RewritePath=/ap(?<abc>/?.*), $\{abc}
+
+
+
